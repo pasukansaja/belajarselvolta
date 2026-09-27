@@ -296,6 +296,11 @@
   .vm-reading { font-size:21px; font-weight:900; font-family:'Consolas','Courier New',monospace; color:#4ADE80; text-shadow:0 0 8px rgba(74,222,128,.55); line-height:1; }
   .vm-reading.off { color:#546E7A; text-shadow:none; }
   .vm-arah { font-size:10.5px; font-weight:800; color:#FFE082; line-height:1; min-height:11px; }
+  .vm-pole { position:absolute; top:50%; transform:translateY(-50%); width:22px; height:22px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900; z-index:5;
+    border:2px solid #ECEFF1; box-shadow:0 2px 5px rgba(0,0,0,.25); }
+  .vm-plus { left:-25px; background:#D32F2F; color:#fff; }
+  .vm-minus { right:-25px; background:#263238; color:#fff; }
 
   .lamp-box { position:absolute; left:378px; top:44px; width:84px; height:68px; display:flex; align-items:center; justify-content:center; z-index:3; }
   .lampu { width:56px; height:56px; border-radius:50%; border:3px solid #9AA7B0; background:radial-gradient(circle at 35% 30%, #FFFFFF, #ECEFF1 75%); display:flex; align-items:center; justify-content:center; transition:background .4s, box-shadow .4s, border-color .4s; }
@@ -552,6 +557,8 @@
                 <g id="lab-elektron"></g>
               </svg>
               <div class="voltmeter">
+                <span class="vm-pole vm-plus">+</span>
+                <span class="vm-pole vm-minus">−</span>
                 <div class="vm-label">VOLTMETER</div>
                 <div class="vm-reading off" id="vm-reading">0,00 V</div>
                 <div class="vm-arah" id="vm-arah"></div>
@@ -596,11 +603,11 @@
             </div>
             <div class="lab-tab-body" id="tab-rakit" style="display:flex">
               <div class="lab-sec">
-                <div class="lab-sec-title">🔌 Elektrode KIRI (gelas kiri)</div>
+                <div class="lab-sec-title">🔌 Elektrode KIRI — KATODA (+) (gelas kiri)</div>
                 <div class="logam-grid" id="grid-kiri"></div>
               </div>
               <div class="lab-sec">
-                <div class="lab-sec-title">🔌 Elektrode KANAN (gelas kanan)</div>
+                <div class="lab-sec-title">🔌 Elektrode KANAN — ANODA (−) (gelas kanan)</div>
                 <div class="logam-grid" id="grid-kanan"></div>
               </div>
               <div class="lab-sec">
@@ -613,8 +620,8 @@
               <button class="lab-reset-btn" data-sfx onclick="labReset()">🔄 Reset Praktikum</button>
             </div>
             <div class="lab-tab-body" id="tab-data" style="display:none">
-              <div class="lab-sec"><div class="lab-sec-title" style="color:#B71C1C">⚡ ANODA (−) — Oksidasi</div><div id="d-anoda"></div></div>
-              <div class="lab-sec"><div class="lab-sec-title" style="color:#1B5E20">⚡ KATODA (+) — Reduksi</div><div id="d-katoda"></div></div>
+              <div class="lab-sec"><div class="lab-sec-title" style="color:#B71C1C">⚡ ANODA (−) — Oksidasi · KANAN</div><div id="d-anoda"></div></div>
+              <div class="lab-sec"><div class="lab-sec-title" style="color:#1B5E20">⚡ KATODA (+) — Reduksi · KIRI</div><div id="d-katoda"></div></div>
               <div class="lab-sec"><div class="lab-sec-title">🧮 Potensial Sel</div><div id="d-ehitung"></div></div>
               <div class="lab-sec"><div class="lab-sec-title">📝 Notasi Sel</div><div id="d-notasi"></div></div>
               <div class="lab-sec"><div class="lab-sec-title">🔎 Spontanitas &amp; Pengamatan</div><div id="d-spontan"></div><div class="lab-makro" id="d-makro"></div></div>
@@ -1705,7 +1712,7 @@ const LAB_LOGAM = {
 
 const labS = {
   kiri:'Zn', kanan:'Cu', bridge:false, saklar:false,
-  aktif:false, E:0, AN:null, KA:null, anodaSisi:null, arah:null,
+  aktif:false, spontan:false, E:0, AN:null, KA:null, anodaSisi:null, arah:null,
   tKiri:190, tKanan:190, waktu:0, catatNo:0, pernahAktif:false, hintMakro:false,
   misi:[false,false,false,false,false], skor:0, m5key:'', m5opt:null
 };
@@ -1746,9 +1753,10 @@ function toggleSaklar(){ labS.saklar=!labS.saklar; labUpdate(); }
 
 function labLabelPeran(sisi){
   const m=LAB_LOGAM[labS[sisi]];
-  if(!labS.AN) return '<b>'+m.simbol+'</b> · <span class="role-netral">E° = 0</span>';
-  const an=(labS.anodaSisi===sisi);
-  return '<b>'+m.simbol+'</b> · <span class="role-'+(an?'an':'kat')+'">'+(an?'ANODA (−)':'KATODA (+)')+'</span>';
+  if(sisi==='kiri'){
+    return '<b>'+m.simbol+'</b> · <span class="role-kat">KATODA (+)</span>';
+  }
+  return '<b>'+m.simbol+'</b> · <span class="role-an">ANODA (−)</span>';
 }
 
 function labElektron(){
@@ -1756,7 +1764,10 @@ function labElektron(){
   if(!g) return;
   g.innerHTML='';
   if(!labS.aktif) return;
-  const pid=(labS.anodaSisi==='kiri')?'ePathLR':'ePathRL';
+
+  // Posisi kutub galvanometer tetap: (+) di kiri/KATODA dan (−) di kanan/ANODA.
+  // Elektron hanya mengalir saat E°katoda > E°anoda.
+  const pid='ePathRL';
   const NS='http://www.w3.org/2000/svg';
   for(let i=0;i<8;i++){
     const c=document.createElementNS(NS,'circle');
@@ -1778,31 +1789,44 @@ function labElektron(){
 }
 
 function labUpdate(){
-  const A=LAB_LOGAM[labS.kiri], B=LAB_LOGAM[labS.kanan];
-  if(A.Eo<B.Eo){ labS.anodaSisi='kiri';  labS.AN=A; labS.KA=B; }
-  else if(B.Eo<A.Eo){ labS.anodaSisi='kanan'; labS.AN=B; labS.KA=A; }
-  else{ labS.anodaSisi=null; labS.AN=null; labS.KA=null; }
+  const K=LAB_LOGAM[labS.kiri];   // KATODA tetap di kiri, terhubung ke kutub (+)
+  const A=LAB_LOGAM[labS.kanan];  // ANODA tetap di kanan, terhubung ke kutub (−)
 
-  labS.E=labS.AN ? Math.round((labS.KA.Eo-labS.AN.Eo)*100)/100 : 0;
-  labS.aktif=!!(labS.AN && labS.bridge && labS.saklar && labS.E>0);
+  labS.anodaSisi='kanan';
+  labS.AN=A;
+  labS.KA=K;
+
+  // E°sel mengikuti polaritas galvanometer yang TETAP:
+  // E°sel = E°katoda (kiri/+) − E°anoda (kanan/−)
+  labS.E=Math.round((K.Eo-A.Eo)*100)/100;
+
+  // Reaksi spontan hanya jika E°sel > 0.
+  // Rangkaian harus lengkap agar arus benar-benar mengalir.
+  labS.spontan=labS.E>0;
+  labS.aktif=!!(labS.spontan && labS.bridge && labS.saklar);
   if(labS.aktif) labS.pernahAktif=true;
 
   const elK=document.getElementById('el-kiri'), elKa=document.getElementById('el-kanan');
-  elK.style.background=A.el; elKa.style.background=B.el;
+  elK.style.background=K.el; elKa.style.background=A.el;
   elK.style.height=labS.tKiri+'px'; elKa.style.height=labS.tKanan+'px';
-  elK.querySelector('.el-sym').textContent=A.simbol;
-  elKa.querySelector('.el-sym').textContent=B.simbol;
+  elK.querySelector('.el-sym').textContent=K.simbol;
+  elKa.querySelector('.el-sym').textContent=A.simbol;
+
   const larK=document.getElementById('lar-kiri'), larKa=document.getElementById('lar-kanan');
-  larK.style.background=A.sol; larKa.style.background=B.sol;
-  larK.style.setProperty('--ionc',A.ionc); larKa.style.setProperty('--ionc',B.ionc);
+  larK.style.background=K.sol; larKa.style.background=A.sol;
+  larK.style.setProperty('--ionc',K.ionc); larKa.style.setProperty('--ionc',A.ionc);
 
   document.getElementById('lbl-kiri').innerHTML=labLabelPeran('kiri');
   document.getElementById('lbl-kanan').innerHTML=labLabelPeran('kanan');
 
   const vm=document.getElementById('vm-reading');
-  vm.textContent=labS.aktif? labFmt(labS.E,true)+' V' : '0,00 V';
-  vm.classList.toggle('off',!labS.aktif);
-  document.getElementById('vm-arah').textContent=labS.aktif? ('e⁻ : '+labS.AN.simbol+' → '+labS.KA.simbol) : '';
+  // Voltmeter tetap membaca beda potensial sesuai posisi kutub (+) kiri dan (−) kanan,
+  // meskipun rangkaian belum aktif.
+  vm.textContent=labFmt(labS.E,true)+' V';
+  vm.classList.toggle('off',labS.E===0);
+  document.getElementById('vm-arah').textContent=labS.aktif
+    ? ('e⁻ : '+labS.AN.simbol+' → '+labS.KA.simbol)
+    : (labS.E<0 ? 'E°sel negatif — tidak spontan' : (labS.E>0 ? 'E°sel positif' : 'E°sel = 0'));
 
   const lampu=document.getElementById('lampu');
   if(labS.aktif){
@@ -1822,26 +1846,34 @@ function labUpdate(){
   const br=document.getElementById('lab-bridge');
   br.classList.toggle('lepas',!labS.bridge);
   br.classList.toggle('pause',!labS.aktif);
-  const anKiri=(labS.anodaSisi==='kiri');
-  document.getElementById('ionAn').classList.toggle('rev',anKiri);
-  document.getElementById('ionKat').classList.toggle('rev',!anKiri);
+
+  // Jembatan garam: anion menuju ANODA (kanan), kation menuju KATODA (kiri).
+  document.getElementById('ionAn').classList.remove('rev');
+  document.getElementById('ionKat').classList.remove('rev');
   const tK=document.getElementById('brTagKiri'), tN=document.getElementById('brTagKanan');
   if(labS.aktif){
-    tK.textContent=anKiri?'A⁻':'K⁺';
-    tN.textContent=anKiri?'K⁺':'A⁻';
-    tK.setAttribute('fill',anKiri?'#2E9E44':'#8E24AA');
-    tN.setAttribute('fill',anKiri?'#8E24AA':'#2E9E44');
+    tK.textContent='K⁺';
+    tN.textContent='A⁻';
+    tK.setAttribute('fill','#8E24AA');
+    tN.setAttribute('fill','#2E9E44');
   }else{ tK.textContent=''; tN.textContent=''; }
 
-  const arah=labS.aktif?(anKiri?'LR':'RL'):null;
+  const arah=labS.aktif?'RL':null;
   if(arah!==labS.arah){ labS.arah=arah; labElektron(); }
 
   const st=document.getElementById('lab-status');
   let txt, cls;
-  if(!labS.AN){ txt='E°sel = 0 — tidak ada reaksi'; cls='off'; }
-  else if(!labS.bridge){ txt='Jembatan terlepas — arus berhenti!'; cls='off'; }
-  else if(!labS.saklar){ txt='Saklar terbuka — rangkaian terputus'; cls='off'; }
-  else{ txt='SEL AKTIF — arus mengalir ⚡'; cls='on'; }
+  if(labS.E>0 && labS.bridge && labS.saklar){
+    txt='SEL SPONTAN & AKTIF — arus mengalir ⚡'; cls='on';
+  }else if(labS.E<0){
+    txt='E°sel NEGATIF — reaksi tidak spontan'; cls='off';
+  }else if(labS.E===0){
+    txt='E°sel = 0 — tidak ada reaksi bersih'; cls='off';
+  }else if(!labS.bridge){
+    txt='E°sel positif — pasang jembatan garam'; cls='off';
+  }else if(!labS.saklar){
+    txt='E°sel positif — tutup saklar untuk mengalirkan arus'; cls='off';
+  }
   st.textContent=txt; st.className='lab-status '+cls;
 
   const tgB=document.getElementById('tg-bridge'), tgS=document.getElementById('tg-saklar');
@@ -1859,34 +1891,40 @@ function labIsiData(){
   const dA=document.getElementById('d-anoda'), dK=document.getElementById('d-katoda'),
         dE=document.getElementById('d-ehitung'), dN=document.getElementById('d-notasi'),
         dS=document.getElementById('d-spontan'), dM=document.getElementById('d-makro');
-  if(!labS.AN){
-    dA.innerHTML='<div class="lab-kosong">Kedua elektrode sejenis — tidak ada reaksi redoks spontan.</div>';
-    dK.innerHTML='<div class="lab-kosong">—</div>';
-    dE.innerHTML='<div class="lab-reaksi">E°sel = 0,00 V</div>';
-    dN.innerHTML='<div class="lab-kosong">Notasi tidak dapat ditentukan.</div>';
-    dS.innerHTML='<span class="sp bad">TIDAK ADA REAKSI</span>';
-    dM.textContent='Elektrode sejenis — tidak ada perubahan yang teramati.';
-    return;
-  }
-  const An=labS.AN, Ka=labS.KA;
-  dA.innerHTML='<b>'+An.nama+' ('+An.simbol+')</b> — elektrode '+labS.anodaSisi+' · <b style="color:#B71C1C">OKSIDASI</b>'+
-    '<div class="lab-reaksi">'+An.simbol+'(s) → '+An.ion+'(aq) + '+(An.n===1?'e⁻':An.n+'e⁻')+'</div>';
-  dK.innerHTML='<b>'+Ka.nama+' ('+Ka.simbol+')</b> — elektrode '+(labS.anodaSisi==='kiri'?'kanan':'kiri')+' · <b style="color:#1B5E20">REDUKSI</b>'+
-    '<div class="lab-reaksi">'+Ka.ion+'(aq) + '+(Ka.n===1?'e⁻':Ka.n+'e⁻')+' → '+Ka.simbol+'(s)</div>';
+
+  const A=labS.AN, K=labS.KA;
+
+  dA.innerHTML='<b>'+A.nama+' ('+A.simbol+')</b> — elektrode kanan · <b style="color:#B71C1C">ANODA (−) / OKSIDASI</b>'+
+    '<div class="lab-reaksi">'+A.simbol+'(s) → '+A.ion+'(aq) + '+(A.n===1?'e⁻':A.n+'e⁻')+'</div>';
+
+  dK.innerHTML='<b>'+K.nama+' ('+K.simbol+')</b> — elektrode kiri · <b style="color:#1B5E20">KATODA (+) / REDUKSI</b>'+
+    '<div class="lab-reaksi">'+K.ion+'(aq) + '+(K.n===1?'e⁻':K.n+'e⁻')+' → '+K.simbol+'(s)</div>';
+
   dE.innerHTML='<div class="lab-rumus">E°sel = E°katoda − E°anoda</div>'+
-    '<div class="lab-reaksi">('+labFmt(Ka.Eo,true)+' V) − ('+labFmt(An.Eo,true)+' V) = <b>'+labFmt(labS.E,true)+' V</b></div>';
-  dN.innerHTML='<div class="lab-reaksi">'+An.simbol+'(s) | '+An.ion+'(aq) ‖ '+Ka.ion+'(aq) | '+Ka.simbol+'(s)</div>'+
-    '<div class="lab-note">Anoda selalu ditulis pada ruas kiri notasi sel.</div>';
-  dS.innerHTML=(labS.E>0)?'<span class="sp ok">SPONTAN ⚡ (E°sel &gt; 0)</span>':'<span class="sp bad">TIDAK SPONTAN</span>';
-  dM.textContent=labS.aktif
-    ? 'Arus mengalir · anoda ('+An.simbol+') perlahan mengecil, katoda ('+Ka.simbol+') membesar.'
-    : 'Sel tidak aktif — tidak ada perubahan pada elektroda.';
+    '<div class="lab-reaksi">('+labFmt(K.Eo,true)+' V) − ('+labFmt(A.Eo,true)+' V) = <b>'+labFmt(labS.E,true)+' V</b></div>'+
+    '<div class="lab-note">Kutub (+) galvanometer tetap di KATODA (kiri), kutub (−) tetap di ANODA (kanan).</div>';
+
+  dN.innerHTML='<div class="lab-reaksi">'+A.simbol+'(s) | '+A.ion+'(aq) ‖ '+K.ion+'(aq) | '+K.simbol+'(s)</div>'+
+    '<div class="lab-note">Notasi sel ditulis: anoda | ion anoda ‖ ion katoda | katoda.</div>';
+
+  if(labS.E>0){
+    dS.innerHTML='<span class="sp ok">SPONTAN ⚡ (E°sel &gt; 0)</span>';
+    dM.textContent=labS.aktif
+      ? 'Arus mengalir · anoda ('+A.simbol+') mengecil, katoda ('+K.simbol+') membesar.'
+      : 'Reaksi secara termodinamika spontan, tetapi arus belum mengalir karena rangkaian belum lengkap.';
+  }else if(labS.E<0){
+    dS.innerHTML='<span class="sp bad">TIDAK SPONTAN (E°sel &lt; 0)</span>';
+    dM.textContent='Pada konfigurasi kutub tetap ini, katoda memiliki E° lebih kecil daripada anoda. Reaksi tidak berlangsung dan tidak ada perubahan pada elektroda.';
+  }else{
+    dS.innerHTML='<span class="sp bad">TIDAK ADA REAKSI BERSIH (E°sel = 0)</span>';
+    dM.textContent='Kedua elektrode memiliki E° yang sama sehingga tidak ada kecenderungan reaksi bersih.';
+  }
 }
 
 function labCekMisi(){
   const S=labS;
   if(!S.misi[0] && S.aktif && Math.abs(S.E-1.10)<0.005 &&
-     ((S.kiri==='Zn'&&S.kanan==='Cu')||(S.kiri==='Cu'&&S.kanan==='Zn'))){
+     S.kiri==='Zn' && S.kanan==='Cu'){
     S.misi[0]=true;
     labSkor(20,'🎉 Misi 1 selesai! Sel Daniell Zn–Cu aktif, E°sel = +1,10 V.');
   }
@@ -1923,25 +1961,27 @@ function labRenderMisi(){
     const card=document.getElementById('misi-'+(i+1));
     if(card) card.classList.toggle('done',labS.misi[i]);
   });
+
   const q4=document.getElementById('m4-quiz');
   if(q4){
     if(labS.misi[3]){
-      q4.innerHTML='<div class="misi-hint ok">✅ Anoda = elektrode dengan E° lebih rendah (lebih mudah teroksidasi).</div>';
+      q4.innerHTML='<div class="misi-hint ok">✅ ANODA tetap di kanan dan terhubung ke kutub (−) galvanometer.</div>';
     }else if(labS.aktif){
-      q4.innerHTML=`<div class="m4-tanya">Elektrode manakah yang menjadi <b>ANODA</b> pada sel yang sedang aktif?</div>
+      q4.innerHTML=`<div class="m4-tanya">Elektrode manakah yang menjadi <b>ANODA</b> pada rangkaian ini?</div>
         <div class="m4-opsi">
           <button class="m-btn" data-sfx onclick="labJawabM4('kiri')">⬅ KIRI (${labS.kiri})</button>
           <button class="m-btn" data-sfx onclick="labJawabM4('kanan')">KANAN (${labS.kanan}) ➡</button>
         </div>
         <div class="feedback" id="m4-fb"></div>`;
     }else{
-      q4.innerHTML='<div class="misi-hint">🔒 Aktifkan sel lebih dulu (pasang jembatan garam &amp; tutup saklar) untuk menjawab.</div>';
+      q4.innerHTML='<div class="misi-hint">🔒 Aktifkan sel dengan E°sel positif untuk menjawab.</div>';
     }
   }
+
   const q5=document.getElementById('m5-quiz');
   if(q5){
     if(labS.misi[4]){
-      q5.innerHTML='<div class="misi-hint ok">✅ Notasi sel: anoda | ion anoda ‖ ion katoda | katoda.</div>';
+      q5.innerHTML='<div class="misi-hint ok">✅ Notasi sel: anoda (kanan) | ion anoda ‖ ion katoda | katoda (kiri).</div>';
     }else if(labS.aktif){
       const key=labS.kiri+'|'+labS.kanan;
       if(labS.m5key!==key){
@@ -1959,7 +1999,7 @@ function labRenderMisi(){
         labS.m5opt.map((o,i)=>'<button class="m-nota" data-sfx onclick="labJawabM5('+i+')">'+o.t+'</button>').join('')+
         '<div class="feedback" id="m5-fb"></div>';
     }else{
-      q5.innerHTML='<div class="misi-hint">🔒 Aktifkan sel lebih dulu untuk menjawab.</div>';
+      q5.innerHTML='<div class="misi-hint">🔒 Aktifkan sel dengan E°sel positif untuk menjawab.</div>';
     }
   }
 }
@@ -1968,14 +2008,14 @@ function labJawabM4(sisi){
   const btns=document.querySelectorAll('#m4-quiz .m-btn');
   const fb=document.getElementById('m4-fb');
   const idx=(sisi==='kiri')?0:1;
-  if(sisi===labS.anodaSisi){
+  if(sisi==='kanan'){
     btns[idx].classList.add('benar');
-    if(fb){ fb.className='feedback show ok'; fb.textContent='Benar! '+labS.AN.nama+' ('+labS.AN.simbol+') memiliki E° lebih rendah sehingga mengalami oksidasi → anoda.'; }
+    if(fb){ fb.className='feedback show ok'; fb.textContent='Benar! Elektrode kanan tetap menjadi anoda (−) dan mengalami oksidasi.'; }
     labS.misi[3]=true;
-    labSkor(20,'🎉 Misi 4 selesai! Analisis anoda–katodamu tepat.');
+    labSkor(20,'🎉 Misi 4 selesai! Kamu memahami posisi anoda dan katoda.');
   }else{
     btns[idx].classList.add('salah');
-    if(fb){ fb.className='feedback show no'; fb.textContent='Belum tepat. Logam dengan E° lebih rendah lebih mudah teroksidasi sehingga bertindak sebagai anoda.'; }
+    if(fb){ fb.className='feedback show no'; fb.textContent='Belum tepat. Pada Lab Maya ini posisi anoda (−) dan katoda (+) dibuat tetap.'; }
     sfx('salah'); efekSalahFlash();
   }
 }
@@ -1986,29 +2026,26 @@ function labJawabM5(i){
   const fb=document.getElementById('m5-fb');
   if(o.b){
     btns[i].classList.add('benar');
-    if(fb){ fb.className='feedback show ok'; fb.textContent='Tepat! Anoda ditulis pada ruas kiri dan katoda pada ruas kanan notasi sel.'; }
+    if(fb){ fb.className='feedback show ok'; fb.textContent='Tepat! Anoda di ruas kiri dan katoda di ruas kanan notasi sel, meskipun posisi fisik elektrode pada Lab Maya tetap.'; }
     labS.misi[4]=true;
     labSkor(20,'🎉 Misi 5 selesai! Kamu menguasai notasi sel Volta.');
   }else{
     btns[i].classList.add('salah'); btns[i].disabled=true;
-    if(fb){ fb.className='feedback show no'; fb.textContent='Belum tepat. Ingat: anoda di kiri, katoda di kanan.'; }
+    if(fb){ fb.className='feedback show no'; fb.textContent='Belum tepat. Ingat: notasi sel selalu ditulis anoda | ion anoda ‖ ion katoda | katoda.'; }
     sfx('salah'); efekSalahFlash();
   }
 }
 function labCatat(){
   labS.catatNo++;
-  let isi;
-  if(labS.AN){
-    isi='<b>No. '+labS.catatNo+'</b> · ⏱ '+labS.waktu+' dtk<br>'+
-      'Pasangan: '+labS.AN.simbol+'–'+labS.KA.simbol+' · E°sel = '+labFmt(labS.E,true)+' V · '+
-      (labS.aktif?'sel AKTIF (e⁻: '+labS.AN.simbol+' → '+labS.KA.simbol+')':'sel TIDAK AKTIF')+'<br>'+
-      'Notasi: '+labS.AN.simbol+'(s)|'+labS.AN.ion+'‖'+labS.KA.ion+'|'+labS.KA.simbol+'(s)';
-  }else{
-    isi='<b>No. '+labS.catatNo+'</b> · ⏱ '+labS.waktu+' dtk<br>Elektrode sejenis ('+labS.kiri+'–'+labS.kanan+') · E°sel = 0,00 V · tidak ada reaksi';
-  }
+  const K=labS.KA, A=labS.AN;
   const item=document.createElement('div');
   item.className='lab-log-item';
-  item.innerHTML=isi;
+  item.innerHTML='<b>No. '+labS.catatNo+'</b> · ⏱ '+labS.waktu+' dtk<br>'+
+    'KATODA (+): '+K.simbol+' · ANODA (−): '+A.simbol+' · E°sel = '+labFmt(labS.E,true)+' V · '+
+    (labS.aktif?'sel AKTIF (e⁻: '+A.simbol+' → '+K.simbol+')':
+      (labS.E>0?'reaksi spontan tetapi rangkaian belum aktif':
+       (labS.E<0?'tidak spontan pada konfigurasi kutub tetap':'tidak ada reaksi bersih')))+'<br>'+
+    'Notasi: '+A.simbol+'(s)|'+A.ion+'‖'+K.ion+'|'+K.simbol+'(s)';
   const log=document.getElementById('lab-log');
   log.insertBefore(item,log.firstChild);
   while(log.children.length>10) log.removeChild(log.lastChild);
@@ -2049,13 +2086,9 @@ function labSelesai(){
 setInterval(()=>{
   if(!labS.aktif) return;
   labS.waktu++;
-  if(labS.anodaSisi==='kiri'){
-    labS.tKiri=Math.max(150,labS.tKiri-1);
-    labS.tKanan=Math.min(205,labS.tKanan+1);
-  }else{
-    labS.tKanan=Math.max(150,labS.tKanan-1);
-    labS.tKiri=Math.min(205,labS.tKiri+1);
-  }
+  // Saat aktif: anoda tetap di kanan mengecil, katoda tetap di kiri membesar.
+  labS.tKanan=Math.max(150,labS.tKanan-1);
+  labS.tKiri=Math.min(205,labS.tKiri+1);
   const ek=document.getElementById('el-kiri'), ea=document.getElementById('el-kanan');
   if(ek) ek.style.height=labS.tKiri+'px';
   if(ea) ea.style.height=labS.tKanan+'px';
