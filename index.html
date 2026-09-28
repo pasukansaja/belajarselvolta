@@ -314,7 +314,7 @@
   .pion { position:absolute; width:9px; height:9px; border-radius:50%; background:var(--ionc,#4A7BA6); opacity:.7; animation:pionFloat 4s ease-in-out infinite; }
   @keyframes pionFloat { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-14px);} }
 
-  .elektrode { position:absolute; top:183px; width:26px; height:190px; border-radius:7px 7px 5px 5px; z-index:3; box-shadow:0 3px 10px rgba(0,0,0,.25); display:flex; justify-content:center; transition:height 1s linear, background .3s; }
+  .elektrode { position:absolute; top:183px; width:26px; height:190px; border-radius:7px 7px 5px 5px; z-index:3; box-shadow:0 3px 10px rgba(0,0,0,.25); display:flex; justify-content:center; transition:background .3s; }
   .elektrode .el-sym { margin-top:5px; font-size:12px; font-weight:900; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6); }
   .hc-label { position:absolute; top:398px; width:180px; text-align:center; font-size:15px; font-weight:800; color:var(--tinta); z-index:2; }
   .role-an, .role-kat, .role-netral { color:#fff; padding:3px 10px; border-radius:99px; font-size:11.5px; display:inline-block; margin-left:4px; }
@@ -2084,21 +2084,19 @@ function labSelesai(){
   sfx('win');
 }
 
-/* Timer Lab: perubahan elektroda selama sel aktif */
+/* Timer Lab: pengamatan aliran elektron selama sel aktif */
 setInterval(()=>{
   if(!labS.aktif) return;
   labS.waktu++;
-  // Saat aktif: anoda tetap di kanan mengecil, katoda tetap di kiri membesar.
-  labS.tKanan=Math.max(150,labS.tKanan-1);
-  labS.tKiri=Math.min(205,labS.tKiri+1);
+  // Ukuran kedua elektroda tetap selama proses sel Volta.
   const ek=document.getElementById('el-kiri'), ea=document.getElementById('el-kanan');
-  if(ek) ek.style.height=labS.tKiri+'px';
-  if(ea) ea.style.height=labS.tKanan+'px';
+  if(ek) ek.style.height='190px';
+  if(ea) ea.style.height='190px';
   const dm=document.getElementById('d-makro');
-  if(dm) dm.textContent='Arus mengalir · anoda ('+labS.AN.simbol+') perlahan mengecil, katoda ('+labS.KA.simbol+') membesar · ⏱ '+labS.waktu+' dtk';
+  if(dm) dm.textContent='Arus mengalir · elektron bergerak dari anoda ('+labS.AN.simbol+') menuju katoda ('+labS.KA.simbol+') · ⏱ '+labS.waktu+' dtk';
   if(labS.waktu===8 && !labS.hintMakro){
     labS.hintMakro=true;
-    labToast('👀 Amati: elektroda anoda mengecil, elektroda katoda membesar!');
+    labToast('👀 Amati pergerakan elektron dari anoda menuju katoda!');
   }
 },1000);
 
