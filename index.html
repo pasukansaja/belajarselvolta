@@ -1820,13 +1820,15 @@ function labUpdate(){
   document.getElementById('lbl-kanan').innerHTML=labLabelPeran('kanan');
 
   const vm=document.getElementById('vm-reading');
-  // Voltmeter tetap membaca beda potensial sesuai posisi kutub (+) kiri dan (−) kanan,
-  // meskipun rangkaian belum aktif.
-  vm.textContent=labFmt(labS.E,true)+' V';
-  vm.classList.toggle('off',labS.E===0);
-  document.getElementById('vm-arah').textContent=labS.aktif
+  // Voltmeter baru menampilkan tegangan sel setelah jembatan garam terpasang
+  // DAN saklar ditutup. Sebelum rangkaian lengkap, pembacaan = 0 V.
+  const vmAktif = !!(labS.bridge && labS.saklar && labS.spontan);
+  const vmValue = vmAktif ? labS.E : 0;
+  vm.textContent=labFmt(vmValue,true)+' V';
+  vm.classList.toggle('off',!vmAktif);
+  document.getElementById('vm-arah').textContent=vmAktif
     ? ('e⁻ : '+labS.AN.simbol+' → '+labS.KA.simbol)
-    : (labS.E<0 ? 'E°sel negatif — tidak spontan' : (labS.E>0 ? 'E°sel positif' : 'E°sel = 0'));
+    : '0 V — rangkaian belum aktif';
 
   const lampu=document.getElementById('lampu');
   if(labS.aktif){
